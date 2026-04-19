@@ -1,4 +1,9 @@
 
+***
+
+### 2. README.md for the `embedding` branch (Models & Chunking Experiments)
+Save this at the root of your repository on the `embedding` branch.
+
 ```markdown
 # Embedding Models & Chunk Size Optimization 🧠
 
