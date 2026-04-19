@@ -1,41 +1,69 @@
+# 🧠 Text Embeddings & Chunking Strategies
 
-***
+Welcome to the **Embeddings Experiments** repository! This project serves as a sandbox for testing, evaluating, and optimizing text embeddings and chunking strategies. 
 
-### 2. README.md for the `embedding` branch (Models & Chunking Experiments)
-Save this at the root of your repository on the `embedding` branch.
+In Natural Language Processing (NLP) and Retrieval-Augmented Generation (RAG) pipelines, the quality of your vector embeddings dictates the accuracy of your search results. This repo explores how different models and text-splitting techniques affect semantic retrieval.
 
-```markdown
-# Embedding Models & Chunk Size Optimization 🧠
+## 📖 What are Embeddings?
+Embeddings are mathematical representations of text (words, sentences, or entire documents) converted into high-dimensional arrays of numbers (vectors). 
+Models are trained so that text with similar **semantic meaning** will have vectors that are closer together in the vector space. This enables systems to "understand" context rather than just keyword matching.
 
-This branch focuses on experimenting with and optimizing the retrieval phase of our RAG pipeline. The main goal is to evaluate different embedding models and chunk sizes to maximize retrieval accuracy for Arabic telecommunication queries (e.g., `"حل مشكلة بطء شبكة اﻻنترنت ؟؟"`).
+## 🎯 Core Concepts Explored
 
-## 🧪 Experiments Conducted
+### 1. Embedding Models
+Different use cases require different models. We experiment with:
+* **Monolingual Models:** Fast and efficient (e.g., `all-MiniLM-L6-v2`). Best for English-only tasks.
+* **Multilingual Models:** Optimized for cross-language alignment and non-English text (e.g., `intfloat/multilingual-e5-large`, `BAAI/bge-m3`).
+* **Dimensionality:** Trading off between speed (lower dimensions like 384) and accuracy (higher dimensions like 1024+).
 
-### 1. Model Evaluation
-We tested three different embedding models to determine the best semantic understanding for non-English queries:
-* `intfloat/multilingual-e5-large`
-* `BAAI/bge-m3`
-* `sentence-transformers/all-MiniLM-L6-v2`
+### 2. Text Chunking Strategies
+Large documents must be split into "chunks" before they can be embedded. We analyze the impact of:
+* **Chunk Size:** How many characters or tokens are included in a single vector. 
+  * *Small Chunks (e.g., 100-300 characters):* Highly precise but risk losing surrounding context (fragmentation).
+  * *Large Chunks (e.g., 700-1000 characters):* Great for context preservation but may suffer from "dilution," lowering similarity scores.
+* **Chunk Overlap:** Including a sliding window of text to ensure context isn't lost at the boundaries of a split.
 
-### 2. Chunk Size Tuning
-We evaluated character-based chunk sizes of **500, 600, and 700** to find the sweet spot between keyword density and context preservation.
+### 3. Vector Similarity Search
+Evaluating how quickly and accurately we can retrieve the right vectors using:
+* **FAISS** (Facebook AI Similarity Search)
+* Distance metrics: **Inner Product** (Dot Product) and **Cosine Similarity**.
 
-## 📊 Findings & Report
+## 🛠️ Typical Tech Stack
+To run embedding experiments, you generally need the following tools:
+* **`sentence-transformers`**: Hugging Face's library for state-of-the-art sentence, text, and image embeddings.
+* **`faiss-cpu` / `faiss-gpu`**: For lightning-fast similarity search and clustering of dense vectors.
+* **`numpy` & `pandas`**: Data manipulation and array operations.
 
-* **BGE-M3 (`BAAI/bge-m3`)** emerged as the absolute best model. It demonstrated the deepest semantic understanding, moving past simple keyword matching to genuinely interpret the user's intent.
-* **Multilingual E5 Large** performed decently but showed a bias towards specific keywords rather than the overall context.
-* **All-MiniLM-L6-v2** struggled with Arabic word comprehension and context for our specific use case.
+## 🚀 Quick Start Example
 
-### The Effect of Chunk Size:
-* **500 characters:** High precision for dense queries, but risks fragmenting the context (e.g., separating a symptom from its fix).
-* **700 characters:** Excellent continuity and context mapping, though it slightly dilutes retrieval scores.
-* **600 characters:** The optimal balance, maintaining adequate actionable steps without losing similarity accuracy.
+Here is a basic snippet demonstrating how to generate embeddings and run a semantic search:
 
-**🏆 Conclusion:** The optimal configuration for this RAG pipeline is `BAAI/bge-m3` grouped with a chunk size of **600-700 characters**.
+```python
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
 
-## 🚀 How to Run the Experiments
-The tests and evaluations are fully documented in `rag-workshop-model-expriment.ipynb`.
+# 1. Load your chosen embedding model
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-1. Ensure dependencies are installed:
-   ```bash
-   pip install transformers sentence-transformers faiss-gpu-cu12 numpy
+# 2. Your chunks of text
+documents = [
+    "How to reset my wireless router.",
+    "Billing and subscription cancellation process.",
+    "Slow internet speeds troubleshooting guide."
+]
+
+# 3. Create Embeddings (Normalize for Cosine Similarity)
+embeddings = model.encode(documents, normalize_embeddings=True).astype(np.float32)
+
+# 4. Build FAISS Index
+dimension = embeddings.shape[1]
+index = faiss.IndexFlatIP(dimension) # Inner Product
+index.add(embeddings)
+
+# 5. Query and Retrieve
+query = "Why is my Wi-Fi so slow?"
+query_emb = model.encode([query], normalize_embeddings=True).astype(np.float32)
+distances, indices = index.search(query_emb, k=1)
+
+print(f"Best match: {documents[indices[0][0]]} (Score: {distances[0][0]:.4f})")
