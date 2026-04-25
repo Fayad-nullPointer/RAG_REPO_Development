@@ -111,45 +111,44 @@ def retrieve(query, model, index, chunks, metadata, top_k=6):
 # ============================================================
 def route_query(query):
     """
-    TODO: Implement this function.
-
-    Decides how to handle the user query before sending it to the LLM.
+    LLM-based routing function using a small language model.
+    Decides how to handle the user query before sending it to the RAG pipeline.
 
     Returns one of three labels:
-        "chat"          → normal question or small talk
+        "chat"          → normal telecom question or small talk
         "out_of_scope"  → completely unrelated to telecom
         "ticket"        → user is asking to create a ticket or escalate
-
-    Hint: Use .strip().lower() and check for keywords.
     """
-    # Students: Write your code here
-    # Example:
-    # q = query.strip().lower()
-    # if any(greeting in q for greeting in ["ازيك", "مرحبا", "hello"]):
-    #     return "chat"
-    q = query.strip().lower()
-    # out of scope keywords
-    if any(
-        keyword in q
-        for keyword in [
-            "الطقس",
-            "اخبار",
-            "رياضة",
-            "مسلسلات",
-            "افلام",
-            "طبخ",
-            "سفر",
-            "تاريخ",
-            "سياسة",
-        ]
-    ):
-        return "out_of_scope"
-    if any(
-        keyword in q
-        for keyword in ["تذكرة", "اعمل تذكرة", "ارفع تذكرة", "مهندس", "تصعيد"]
-    ):
-        return "ticket"
-    if any(keyword in q for keyword in ["ازيك", "مرحبا", "hello", "عامل ايه"]):
+    client = Groq(api_key=GROQ_API_KEY)
+
+    system_prompt = """أنت نظام توجيه آلي (Router) لشركة اتصالات (NileTel).
+مهمتك هي تصنيف رسالة المستخدم إلى فئة واحدة فقط:
+- "out_of_scope": مواضيع خارج الاتصالات والدعم الفني (رياضة، أخبار، فضاء، إلخ).
+- "ticket": المستخدم يطلب صراحة إنشاء تذكرة، أو إرسال فني، أو تصعيد عطل مستمر.
+- "chat": أي سؤال فني، استفسار عن الباقات، طلب مساعدة، أو تحية.
+
+رجاءً قم بالرد بكلمة واحدة فقط وبكل دقة: إما chat أو out_of_scope أو ticket."""
+
+    try:
+        response = client.chat.completions.create(
+            model="llama3-8b-8192",  # Small and fast model for routing
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"رسالة المستخدم: {query}"},
+            ],
+            temperature=0.0,
+            max_tokens=10,
+        )
+        route_result = response.choices[0].message.content.strip().lower()
+
+        if "out_of_scope" in route_result:
+            return "out_of_scope"
+        elif "ticket" in route_result:
+            return "ticket"
+        else:
+            return "chat"
+    except Exception as e:
+        print(f"Routing error fallback to chat: {e}")
         return "chat"
 
 
