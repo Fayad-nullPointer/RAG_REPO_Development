@@ -6,8 +6,8 @@ from sentence_transformers import SentenceTransformer
 from groq import Groq
 from dotenv import load_dotenv
 
-DATA_PATH       = r"D:\telecom-rag-assistant\nile_tel_knowledge_base\data"
-EMBEDDING_MODEL = "intfloat/multilingual-e5-large"
+DATA_PATH       = r"/media/ahmed-fayad/3b40def2-87b7-41ce-8913-2981f887941c/home/ITI Cont.../Guided Project RAG/data"
+EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -126,7 +126,7 @@ def route_query(query):
 
     try:
         response = client.chat.completions.create(
-            model="llama3-8b-8192",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"رسالة المستخدم: {query}"},
@@ -181,7 +181,7 @@ def generate_answer(query, retrieved_results):
 قم بالرد بكلمة واحدة فقط بناءً على احتياج العميل لإجراء: YES أو NO."""
 
     class_response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": classification_system},
             {"role": "user", "content": classification_user},
@@ -212,7 +212,7 @@ def generate_answer(query, retrieved_results):
 اكتب الرد الموجه للعميل بناءً على ما سبق:"""
 
     gen_response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": generation_system},
             {"role": "user", "content": generation_user},
